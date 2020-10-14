@@ -6,6 +6,6 @@ More filesystem utilities for the Rust programming language
 
 Copyright (c) 2020 Brian Shu
 
-*trash-cli* is distributed under the terms of both the MIT license and the Apache License 2.0.
+*more-fs* is distributed under the terms of both the MIT license and the Apache License 2.0.
 
 See the [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT)
