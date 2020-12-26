@@ -1,14 +1,22 @@
 pub mod error;
 mod utils;
 
+use jwalk::WalkDir;
 use std::fs;
 use std::path::Path;
 
 use error::{Error, Result};
+use utils::change_dir;
 
-// pub fn move_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
+pub fn move_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
+    let from = from.as_ref();
+    let to = to.as_ref();
 
-// }
+    let copied = copy_dir_all(from, to)?;
+    remove_dir_all(from);
+
+    Ok(copied)
+}
 
 pub fn move_file(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let from = from.as_ref();
@@ -17,6 +25,29 @@ pub fn move_file(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let amount = copy_create(from, to)?;
     remove_file(from)?;
     Ok(amount)
+}
+
+pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
+    let from = from.as_ref();
+    let to = to.as_ref();
+
+    let walkdir = WalkDir::new(from).skip_hidden(false);
+
+    let mut copied = 0;
+    for entry in walkdir {
+        let entry = entry?;
+        let path = entry.path();
+        let new_path = change_dir(from, to, &path)?;
+
+        let file_type = entry.file_type();
+        if file_type.is_dir() {
+            create_dir_all(new_path)?;
+        } else {
+            copied += copy_create(path, new_path)?;
+        }
+    }
+
+    Ok(copied)
 }
 
 pub fn copy_create(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {

@@ -16,9 +16,22 @@ pub fn in_same_dir(path1: impl AsRef<Path>, path2: impl AsRef<Path>) -> bool {
     try_in_same_dir(path1, path2).unwrap_or(false)
 }
 
-pub fn change_parent(path: impl AsRef<Path>, new_dir: impl AsRef<Path>) -> Option<PathBuf> {
-    let filename = path.as_ref().file_name()?;
-    Some(new_dir.as_ref().join(filename))
+pub fn change_dir(
+    from: impl AsRef<Path>,
+    to: impl AsRef<Path>,
+    path: impl AsRef<Path>,
+) -> Result<PathBuf> {
+    let from = from.as_ref();
+    let to = to.as_ref();
+    let path = path.as_ref();
+
+    let new_path = to.join(path.strip_prefix(from).map_err(|e| Error::StripPrefix {
+        target: path.to_path_buf(),
+        strip: from.to_path_buf(),
+        source: e,
+    })?);
+
+    Ok(new_path)
 }
 
 #[cfg(test)]

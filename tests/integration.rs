@@ -65,6 +65,11 @@ fn copy_properly(from: impl AsRef<Path>, to: impl AsRef<Path>) {
     assert!(to.exists());
 }
 
+fn create_dir_all_properly(path: impl AsRef<Path>) {
+    more_fs::create_dir_all(path).unwrap();
+    assert!(path.as_ref().exists());
+}
+
 fn copy_test_helper(from: impl AsRef<Path>, to: impl AsRef<Path>, bytes: &[u8]) {
     let mut opt = OpenOptions::new();
     opt.read(true).write(true).create(true).truncate(true);
@@ -146,4 +151,9 @@ fn move_test() {
     let path1 = get_asset_dir().join("move_test_file");
     let path2 = get_asset_dir().join("moved_file");
     move_test_helper(path1, path2, &bytes);
+}
+
+#[test]
+fn copy_dir_all_test() {
+    let bytes = random_bytes();
 }

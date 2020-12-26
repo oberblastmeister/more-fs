@@ -1,4 +1,5 @@
 use std::{io, path::PathBuf};
+use std::path::StripPrefixError;
 
 use thiserror::Error;
 
@@ -25,6 +26,19 @@ pub enum Error {
         to: PathBuf,
         source: io::Error,
     },
+
+    #[error("Failed to strip the prefix of {target} with {strip}: {source}")]
+    StripPrefix {
+        target: PathBuf,
+        strip: PathBuf,
+        source: StripPrefixError,
+    },
+
+    #[error("Walk directory error: {source}")]
+    Walkdir {
+        #[from]
+        source: jwalk::Error,
+    }
 }
 
 impl Error {
