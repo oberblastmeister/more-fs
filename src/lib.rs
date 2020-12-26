@@ -6,6 +6,10 @@ use std::path::Path;
 
 use error::{Error, Result};
 
+// pub fn move_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
+
+// }
+
 pub fn move_file(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let from = from.as_ref();
     let to = to.as_ref();
