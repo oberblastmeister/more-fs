@@ -140,10 +140,10 @@ fn copy_create() {
     remove_dir_all_properly(get_asset_dir().join("a_dir"));
 }
 
-#[test]
-fn move_test() {
-    let bytes = random_bytes();
-    let path1 = get_asset_dir().join("copy_not_in_same_dir_test_file");
-    let path2 = get_asset_dir().join("moved_file");
-    move_test_helper(path1, path2, &bytes);
-}
+// #[test]
+// fn move_test() {
+//     let bytes = random_bytes();
+//     let path1 = get_asset_dir().join("copy_not_in_same_dir_test_file");
+//     let path2 = get_asset_dir().join("moved_file");
+//     move_test_helper(path1, path2, &bytes);
+// }
