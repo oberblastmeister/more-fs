@@ -1,14 +1,17 @@
 mod common;
 
-use std::{io::{Read, Write}, path::Path};
 use std::{
     fs::{self, File, OpenOptions},
     ops::Range,
 };
+use std::{
+    io::{Read, Write},
+    path::Path,
+};
 
-use eyre::{WrapErr, Result};
+use eyre::{Result, WrapErr};
 
-use common::{random_bytes, get_asset_dir};
+use common::{get_asset_dir, random_bytes};
 
 fn remove_properly(path: impl AsRef<Path>) {
     let path = path.as_ref();
@@ -35,11 +38,7 @@ fn copy_properly(path1: impl AsRef<Path>, path2: impl AsRef<Path>) {
 
 fn copy_test_helper(path1: impl AsRef<Path>, path2: impl AsRef<Path>, bytes: &[u8]) {
     let mut opt = OpenOptions::new();
-    opt
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(true);
+    opt.read(true).write(true).create(true).truncate(true);
 
     let mut file1 = opt.open(&path1).unwrap();
     file1.write_all(&bytes).unwrap();
@@ -63,6 +62,9 @@ fn copy_test() {
 fn copy_test_not_in_same_dir() {
     let bytes = random_bytes();
     let path1 = get_asset_dir().join("copy_not_in_same_dir_test_file");
-    let path2 = path1.parent().unwrap().join("another_dir/copy_not_in_same_dir_test_file");
+    let path2 = path1
+        .parent()
+        .unwrap()
+        .join("another_dir/copy_not_in_same_dir_test_file");
     copy_test_helper(path1, path2, &bytes);
 }
