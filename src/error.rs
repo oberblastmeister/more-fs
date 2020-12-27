@@ -14,6 +14,16 @@ pub enum Error {
         operation: String,
     },
 
+    #[error("The path {path} does not exist")]
+    DoesNotExist {
+        path: PathBuf,
+    },
+
+    #[error("The path {path} is not a directory")]
+    NotDirectory {
+        path: PathBuf,
+    },
+
     #[error("{operation} Tried to recover but it failed: {recovery}")]
     Recover {
         operation: Box<Error>,

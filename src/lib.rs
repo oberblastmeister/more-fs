@@ -1,23 +1,30 @@
-pub mod error;
+mod error;
 mod utils;
 
-use jwalk::WalkDir;
-use std::fs;
+use std::{fs, path::PathBuf};
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use error::{Error, Result};
+use jwalk::WalkDir;
+use rayon::prelude::*;
+
+pub use error::{Error, Result};
 use utils::change_dir;
 
+/// Moves a directory from one place to another recursively. Currently is a wrapper around `copy_dir_all` but removes the
+/// `from` directory
 pub fn move_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let from = from.as_ref();
     let to = to.as_ref();
 
     let copied = copy_dir_all(from, to)?;
-    remove_dir_all(from);
+    remove_dir_all(from)?;
 
     Ok(copied)
 }
 
+/// Moves a file from one place to another. Currently is a wrapper around `copy` but removes the
+/// `from` argument
 pub fn move_file(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let from = from.as_ref();
     let to = to.as_ref();
@@ -27,9 +34,31 @@ pub fn move_file(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     Ok(amount)
 }
 
+fn check_path_copy_dir_all(path: impl AsRef<Path>) -> Result<()> {
+    let path = path.as_ref();
+
+    if !path.exists() {
+        return Err(Error::DoesNotExist {
+            path: path.to_path_buf(),
+        });
+    }
+
+    if !path.is_dir() {
+        return Err(Error::NotDirectory {
+            path: path.to_path_buf(),
+        });
+    }
+
+    Ok(())
+}
+
+/// Recursively copies all contents of the directory to another directory. Will create the new
+/// directory if it does not exist
 pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let from = from.as_ref();
     let to = to.as_ref();
+
+    check_path_copy_dir_all(from)?;
 
     let walkdir = WalkDir::new(from).skip_hidden(false);
 
@@ -43,13 +72,45 @@ pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64>
         if file_type.is_dir() {
             create_dir_all(new_path)?;
         } else {
-            copied += copy_create(path, new_path)?;
+            // the iterator will always iterate over parent directories first so we don't need to
+            // use copy_create
+            copied += copy(path, new_path)?;
         }
     }
 
     Ok(copied)
 }
 
+pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
+    let from = from.as_ref();
+    let to = to.as_ref();
+
+    check_path_copy_dir_all(from)?;
+
+    WalkDir::new(from)
+        .skip_hidden(false)
+        .into_iter()
+        .par_bridge()
+        .try_for_each(|entry| -> Result<()> {
+            let entry = entry?;
+            let path = entry.path();
+            let new_path = change_dir(from, to, &path)?;
+
+            let file_type = entry.file_type();
+            if file_type.is_dir() {
+                if !path.exists() {
+                    create_dir_all(new_path)?;
+                }
+            } else {
+                copy_create(path, new_path)?;
+            }
+            Ok(())
+        })?;
+    Ok(0)
+}
+
+/// A wrapper around `copy` that will also create the parent directories of the file if they do not
+/// exist
 pub fn copy_create(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let from = from.as_ref();
     let to = to.as_ref();
@@ -63,6 +124,8 @@ pub fn copy_create(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> 
     copy(from, to)
 }
 
+/// A wrapper for the standard library's `copy`. Will fail with a custom error that
+/// includes the source error, path, and operation
 pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let from = from.as_ref();
     let to = to.as_ref();
@@ -74,6 +137,8 @@ pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     })
 }
 
+/// A wrapper for the standard library's `remove_file`. Will fail with a custom error that
+/// includes the source error, path, and operation
 pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
     let path = path.as_ref();
 
@@ -84,6 +149,8 @@ pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
     })
 }
 
+/// A wrapper for the standard library's `remove_dir_all`. Will fail with a custom error that
+/// includes the source error, path, and operation
 pub fn remove_dir_all(path: impl AsRef<Path>) -> Result<()> {
     let path = path.as_ref();
 
@@ -94,6 +161,8 @@ pub fn remove_dir_all(path: impl AsRef<Path>) -> Result<()> {
     })
 }
 
+/// A wrapper for the standard library's `create_dir_all`. Will fail with a custom error that
+/// includes the source error, path, and operation
 pub fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
     let path = path.as_ref();
 

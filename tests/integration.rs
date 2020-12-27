@@ -11,7 +11,7 @@ use std::{
 
 use eyre::{Result, WrapErr};
 
-use common::{get_asset_dir, random_bytes};
+use common::{asset_dir, random_bytes, clone_repo};
 
 fn move_properly(from: impl AsRef<Path>, to: impl AsRef<Path>) {
     let from = from.as_ref();
@@ -66,8 +66,9 @@ fn copy_properly(from: impl AsRef<Path>, to: impl AsRef<Path>) {
 }
 
 fn create_dir_all_properly(path: impl AsRef<Path>) {
+    let path = path.as_ref();
     more_fs::create_dir_all(path).unwrap();
-    assert!(path.as_ref().exists());
+    assert!(path.exists());
 }
 
 fn copy_test_helper(from: impl AsRef<Path>, to: impl AsRef<Path>, bytes: &[u8]) {
@@ -119,7 +120,7 @@ fn copy_create_test_helper(from: impl AsRef<Path>, to: impl AsRef<Path>, bytes: 
 #[test]
 fn copy_test() {
     let bytes = random_bytes();
-    let path1 = get_asset_dir().join("test_file");
+    let path1 = asset_dir().join("test_file");
     let path2 = path1.parent().unwrap().join("copied_test_file");
     copy_test_helper(path1, path2, &bytes);
 }
@@ -128,7 +129,7 @@ fn copy_test() {
 #[should_panic]
 fn copy_test_not_in_same_dir() {
     let bytes = random_bytes();
-    let path1 = get_asset_dir().join("copy_not_in_same_dir_test_file");
+    let path1 = asset_dir().join("copy_not_in_same_dir_test_file");
     let path2 = path1
         .parent()
         .unwrap()
@@ -139,21 +140,22 @@ fn copy_test_not_in_same_dir() {
 #[test]
 fn copy_create() {
     let bytes = random_bytes();
-    let path1 = get_asset_dir().join("copy_create_file");
-    let path2 = get_asset_dir().join("a_dir/another_dir/new_file");
+    let path1 = asset_dir().join("copy_create_file");
+    let path2 = asset_dir().join("a_dir/another_dir/new_file");
     copy_create_test_helper(path1, path2, &bytes);
-    remove_dir_all_properly(get_asset_dir().join("a_dir"));
+    remove_dir_all_properly(asset_dir().join("a_dir"));
 }
 
 #[test]
 fn move_test() {
     let bytes = random_bytes();
-    let path1 = get_asset_dir().join("move_test_file");
-    let path2 = get_asset_dir().join("moved_file");
+    let path1 = asset_dir().join("move_test_file");
+    let path2 = asset_dir().join("moved_file");
     move_test_helper(path1, path2, &bytes);
 }
 
 #[test]
 fn copy_dir_all_test() {
-    let bytes = random_bytes();
+    let dir = clone_repo("https://github.com/sharkdp/fd.git", "fd_test");
+    more_fs::copy_dir_all(&dir, dir.parent().unwrap().join("copied_fd")).unwrap();
 }
