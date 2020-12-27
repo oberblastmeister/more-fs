@@ -1,5 +1,5 @@
-use std::{io, path::PathBuf};
 use std::path::StripPrefixError;
+use std::{io, path::PathBuf};
 
 use thiserror::Error;
 
@@ -15,14 +15,10 @@ pub enum Error {
     },
 
     #[error("The path {path} does not exist")]
-    DoesNotExist {
-        path: PathBuf,
-    },
+    DoesNotExist { path: PathBuf },
 
     #[error("The path {path} is not a directory")]
-    NotDirectory {
-        path: PathBuf,
-    },
+    NotDirectory { path: PathBuf },
 
     #[error("{operation} Tried to recover but it failed: {recovery}")]
     Recover {
@@ -48,7 +44,7 @@ pub enum Error {
     Walkdir {
         #[from]
         source: jwalk::Error,
-    }
+    },
 }
 
 impl Error {

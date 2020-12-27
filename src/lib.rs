@@ -1,9 +1,9 @@
 mod error;
 mod utils;
 
-use std::{fs, path::PathBuf};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::{fs, path::PathBuf};
 
 use jwalk::WalkDir;
 use rayon::prelude::*;

@@ -11,7 +11,7 @@ use std::{
 
 use eyre::{Result, WrapErr};
 
-use common::{asset_dir, random_bytes, clone_repo};
+use common::{asset_dir, clone_repo, random_bytes};
 
 fn move_properly(from: impl AsRef<Path>, to: impl AsRef<Path>) {
     let from = from.as_ref();
