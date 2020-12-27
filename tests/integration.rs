@@ -140,7 +140,7 @@ fn copy_test_not_in_same_dir() {
 #[test]
 fn copy_create() {
     let bytes = random_bytes();
-    let path1 = asset_dir().join("copy_create_file");
+    let path1 = asset_dir().join("copy_create_test_file");
     let path2 = asset_dir().join("a_dir/another_dir/new_file");
     copy_create_test_helper(path1, path2, &bytes);
     remove_dir_all_properly(asset_dir().join("a_dir"));
