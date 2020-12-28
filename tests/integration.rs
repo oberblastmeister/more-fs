@@ -1,17 +1,28 @@
 mod common;
+mod custom_tempfile;
 
-use std::{
-    fs::{self, File, OpenOptions},
-    ops::Range,
-};
+use std::fs::{File, OpenOptions};
 use std::{
     io::{Read, Write},
     path::Path,
 };
 
+use custom_tempfile::{create_test_file, random_bytes, tmpname, TMP_DIR};
 use eyre::{Result, WrapErr};
+use function_name::named;
 
-use common::{asset_dir, clone_repo, random_bytes};
+use common::{asset_dir, clone_repo};
+
+/// Will make sure that there are not name clashes between functions because each function has to
+/// have a separate name
+macro_rules! name {
+    ($s:expr) => {
+        concat!(function_name!(), "::", $s)
+    };
+    ($s:expr, $sep:expr) => {
+        concat!(function_name!(), $sep, $s)
+    };
+}
 
 fn move_properly(from: impl AsRef<Path>, to: impl AsRef<Path>) {
     let from = from.as_ref();
@@ -71,17 +82,20 @@ fn create_dir_all_properly(path: impl AsRef<Path>) {
     assert!(path.exists());
 }
 
-fn copy_test_helper(from: impl AsRef<Path>, to: impl AsRef<Path>, bytes: &[u8]) {
+fn copy_test_helper(from: impl AsRef<Path>, to: impl AsRef<Path>, bytes: &[u8]) -> Result<()> {
     let mut opt = OpenOptions::new();
     opt.read(true).write(true).create(true).truncate(true);
 
-    let mut file1 = opt.open(&from).unwrap();
+    let mut file1 = opt
+        .open(&from)
+        .wrap_err_with(|| format!("Failed to open file with name {}", &from.as_ref().display()))?;
     file1.write_all(&bytes).unwrap();
 
     copy_properly(&from, &to);
 
     remove_properly(from);
     remove_properly(to);
+    Ok(())
 }
 
 fn copy_create_properly(from: impl AsRef<Path>, to: impl AsRef<Path>) {
@@ -118,23 +132,30 @@ fn copy_create_test_helper(from: impl AsRef<Path>, to: impl AsRef<Path>, bytes: 
 }
 
 #[test]
-fn copy_test() {
-    let bytes = random_bytes();
-    let path1 = asset_dir().join("test_file");
-    let path2 = path1.parent().unwrap().join("copied_test_file");
-    copy_test_helper(path1, path2, &bytes);
+#[named]
+fn copy_test() -> Result<()> {
+    let from = create_test_file(name!("from"))?;
+    let to = tmpname(name!("to"))?;
+
+    copy_properly(from, to);
+
+    Ok(())
 }
 
 #[test]
+#[named]
+#[ignore]
 #[should_panic]
 fn copy_test_not_in_same_dir() {
-    let bytes = random_bytes();
-    let path1 = asset_dir().join("copy_not_in_same_dir_test_file");
-    let path2 = path1
-        .parent()
-        .unwrap()
-        .join("another_dir/copy_not_in_same_dir_test_file");
-    copy_test_helper(path1, path2, &bytes);
+    let from = create_test_file(name!("from")).unwrap();
+    let to = TMP_DIR
+        .path()
+        .join(concat!(name!("first_dir"), "/", name!("second_dir")))
+        .join(tmpname(name!("to")).unwrap().file_name().unwrap());
+
+    println!("{}", to.display());
+
+    copy_properly(from, to);
 }
 
 #[test]
@@ -154,6 +175,7 @@ fn move_test() {
     move_test_helper(path1, path2, &bytes);
 }
 
+#[ignore]
 #[test]
 fn copy_dir_all_test() {
     let dir = clone_repo("https://github.com/sharkdp/fd.git", "fd_test");
