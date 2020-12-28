@@ -1,4 +1,10 @@
-use std::{ffi::{OsStr, OsString}, fs::{self, OpenOptions}, io::{self, Write}, path::PathBuf, str};
+use std::{
+    ffi::{OsStr, OsString},
+    fs::{self, OpenOptions},
+    io::{self, Write},
+    path::PathBuf,
+    str,
+};
 
 use eyre::{bail, Result, WrapErr};
 use once_cell::sync::Lazy;
@@ -37,7 +43,9 @@ pub fn create_test_file(prefix: impl AsRef<OsStr>) -> Result<PathBuf> {
 /// Finds a tempname with the prefix that is non conflicting with other files
 pub fn tmpname(prefix: impl AsRef<OsStr>) -> Result<PathBuf> {
     let prefix = prefix.as_ref();
-    let path = TMP_DIR.path().join(get_random_name(prefix, ".tmp".as_ref(), NUM_RAND_CHARS));
+    let path = TMP_DIR
+        .path()
+        .join(get_random_name(prefix, ".tmp".as_ref(), NUM_RAND_CHARS));
 
     Ok(path)
 }

@@ -1,10 +1,10 @@
 mod error;
 mod utils;
 
-use std::path::Path;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::{fs, path::PathBuf};
+use std::{io, path::Path};
 
+use error::Operation;
 use jwalk::WalkDir;
 use rayon::prelude::*;
 
@@ -38,8 +38,10 @@ fn check_path_copy_dir_all(path: impl AsRef<Path>) -> Result<()> {
     let path = path.as_ref();
 
     if !path.exists() {
-        return Err(Error::DoesNotExist {
+        return Err(Error::IoExt {
+            source: io::Error::new(io::ErrorKind::NotFound, ""),
             path: path.to_path_buf(),
+            operation: Operation::CopyDirAll,
         });
     }
 
@@ -131,10 +133,11 @@ pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     let from = from.as_ref();
     let to = to.as_ref();
 
-    fs::copy(from, to).map_err(|e| Error::Copy {
+    fs::copy(from, to).map_err(|e| Error::IoExtMulti {
+        source: e,
         from: from.to_path_buf(),
         to: to.to_path_buf(),
-        source: e,
+        operation: Operation::Copy,
     })
 }
 
@@ -146,7 +149,7 @@ pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
     fs::remove_file(path).map_err(|e| Error::IoExt {
         source: e,
         path: path.to_path_buf(),
-        operation: String::from("removing file"),
+        operation: Operation::Remove,
     })
 }
 
@@ -158,7 +161,7 @@ pub fn remove_dir_all(path: impl AsRef<Path>) -> Result<()> {
     fs::remove_dir_all(path).map_err(|e| Error::IoExt {
         source: e,
         path: path.to_path_buf(),
-        operation: String::from("removing all contents of directory"),
+        operation: Operation::RemoveDirAll,
     })
 }
 
@@ -170,6 +173,6 @@ pub fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
     fs::create_dir_all(path).map_err(|e| Error::IoExt {
         source: e,
         path: path.to_path_buf(),
-        operation: String::from("creating all directories"),
+        operation: Operation::CreatePathAll,
     })
 }

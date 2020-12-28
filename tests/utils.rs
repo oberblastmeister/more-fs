@@ -1,8 +1,4 @@
-use std::{
-    path::PathBuf,
-    process::Command,
-    str,
-};
+use std::{path::PathBuf, process::Command, str};
 
 use rand::{thread_rng, Rng};
 
@@ -10,9 +6,9 @@ pub fn asset_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/assets")
 }
 
-pub fn clone_repo(url: &str, name: &str) -> PathBuf {
+pub fn clone_repo(url: &str, path: &str) -> PathBuf {
     let asset_dir = asset_dir();
-    let dir = asset_dir.join(name);
+    let dir = asset_dir.join(path);
 
     if !dir.exists() {
         println!("will git clone");

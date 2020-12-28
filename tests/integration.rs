@@ -11,7 +11,7 @@ use custom_tempfile::{create_test_file, random_bytes, tmpname, TMP_DIR};
 use eyre::{Result, WrapErr};
 use function_name::named;
 
-use common::{asset_dir, clone_repo};
+use utils::{asset_dir, clone_repo};
 
 /// Will make sure that there are not name clashes between functions because each function has to
 /// have a separate name
@@ -185,6 +185,7 @@ fn move_file() -> Result<()> {
 
 #[ignore]
 #[test]
+#[named]
 fn copy_dir_all_test() -> Result<()> {
     let dir = clone_repo("https://github.com/sharkdp/fd.git", "fd_test");
     more_fs::copy_dir_all(&dir, dir.parent().unwrap().join("copied_fd")).unwrap();
