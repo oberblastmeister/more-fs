@@ -1,5 +1,7 @@
 mod error;
 mod utils;
+#[cfg(test)]
+mod tests;
 
 use std::{fs, path::PathBuf};
 use std::{io, path::Path};
