@@ -37,8 +37,9 @@ pub fn create_test_file(prefix: impl AsRef<OsStr>) -> Result<PathBuf> {
 /// Finds a tempname with the prefix that is non conflicting with other files
 pub fn tmpname(prefix: impl AsRef<OsStr>) -> Result<PathBuf> {
     let prefix = prefix.as_ref();
-    let path_string = get_random_name(prefix, ".tmp".as_ref(), NUM_RAND_CHARS);
-    Ok(PathBuf::from(path_string))
+    let path = TMP_DIR.path().join(get_random_name(prefix, ".tmp".as_ref(), NUM_RAND_CHARS));
+
+    Ok(path)
 }
 
 fn tmpname_non_conflicting(prefix: &OsStr, suffix: &OsStr, random_len: usize) -> Result<PathBuf> {

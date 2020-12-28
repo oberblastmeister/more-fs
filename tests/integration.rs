@@ -143,9 +143,8 @@ fn copy_test() -> Result<()> {
 }
 
 #[test]
-#[named]
-#[ignore]
 #[should_panic]
+#[named]
 fn copy_test_not_in_same_dir() {
     let from = create_test_file(name!("from")).unwrap();
     let to = TMP_DIR
@@ -159,25 +158,36 @@ fn copy_test_not_in_same_dir() {
 }
 
 #[test]
-fn copy_create() {
-    let bytes = random_bytes();
-    let path1 = asset_dir().join("copy_create_test_file");
-    let path2 = asset_dir().join("a_dir/another_dir/new_file");
-    copy_create_test_helper(path1, path2, &bytes);
-    remove_dir_all_properly(asset_dir().join("a_dir"));
+#[named]
+fn copy_create() -> Result<()> {
+    let from = create_test_file(name!("from"))?;
+    let dir = TMP_DIR
+        .path()
+        .join(concat!(name!("first_dir"), "/", name!("second_dir")));
+
+    let to = dir.join(tmpname(name!("to"))?.file_name().unwrap());
+
+    copy_create_properly(from, to);
+
+    Ok(())
 }
 
 #[test]
-fn move_test() {
-    let bytes = random_bytes();
-    let path1 = asset_dir().join("move_test_file");
-    let path2 = asset_dir().join("moved_file");
-    move_test_helper(path1, path2, &bytes);
+#[named]
+fn move_file() -> Result<()> {
+    let from = create_test_file(name!("from"))?;
+    let to = tmpname(name!("moved_to"))?;
+
+    move_properly(from, to);
+
+    Ok(())
 }
 
 #[ignore]
 #[test]
-fn copy_dir_all_test() {
+fn copy_dir_all_test() -> Result<()> {
     let dir = clone_repo("https://github.com/sharkdp/fd.git", "fd_test");
     more_fs::copy_dir_all(&dir, dir.parent().unwrap().join("copied_fd")).unwrap();
+
+    Ok(())
 }
