@@ -1,25 +1,18 @@
-use std::{path::PathBuf, process::Command, str};
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+    str,
+};
 
-use rand::{thread_rng, Rng};
+pub fn clone_repo<P: AsRef<Path>>(url: &str, path: P) {
+    let path = path.as_ref();
 
-pub fn asset_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/assets")
-}
-
-pub fn clone_repo(url: &str, path: &str) -> PathBuf {
-    let asset_dir = asset_dir();
-    let dir = asset_dir.join(path);
-
-    if !dir.exists() {
-        println!("will git clone");
-        let output = Command::new("git")
-            .arg("clone")
-            .arg(url)
-            .arg(&dir)
-            .output()
-            .expect("failed to git clone linux");
-        println!("did git clone linux...{:?}", output);
-    }
-
-    dir
+    println!("git cloning path {}", path.display());
+    let output = Command::new("git")
+        .arg("clone")
+        .arg(url)
+        .arg(&path)
+        .output()
+        .expect("failed to git clone linux");
+    println!("did git clone linux...{:?}", output);
 }

@@ -1,7 +1,6 @@
 use std::{
-    borrow::Cow,
     fs::{self, File, OpenOptions},
-    io::{Read, Write},
+    io::{Write},
     path::{Path, PathBuf},
 };
 
