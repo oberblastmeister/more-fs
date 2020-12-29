@@ -3,7 +3,7 @@ mod error;
 mod tests;
 mod utils;
 
-use std::{fs, path::PathBuf};
+use std::{fs, path::PathBuf, result};
 use std::{io, path::Path};
 
 use error::Operation;
@@ -90,6 +90,7 @@ pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64>
     Ok(copied)
 }
 
+/// par bridge is a little bit wierd, don't use this yet
 pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
     as_ref_all!(from, to);
 
@@ -106,16 +107,46 @@ pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<
 
             let file_type = entry.file_type();
             if file_type.is_dir() {
-                if !new_path.exists() {
-                    create_dir_all(new_path)?;
-                }
+                println!("creating new dir all {}", new_path.display());
+                create_dir_all(new_path)?; // if it already exists, will not fail
             } else {
+                println!("copying from {} to {}", path.display(), new_path.display());
                 copy_create(path, new_path)?;
             }
             Ok(())
         })?;
 
     Ok(0)
+}
+
+pub fn copy_dir_all_par_alloc(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<()> {
+    as_ref_all!(from, to);
+
+    check_path_copy_dir_all(from)?;
+
+    let entries = WalkDir::new(from)
+        .skip_hidden(false)
+        .into_iter()
+        .collect::<result::Result<Vec<_>, jwalk::Error>>()
+        .map_err(|e| Error::WalkDir { source: e })?;
+
+    entries
+        .into_par_iter()
+        .try_for_each(|entry| -> Result<()> {
+            let path = entry.path();
+            let new_path = change_dir(from, to, &path)?;
+            let file_type = entry.file_type();
+
+            if file_type.is_dir() {
+                create_dir_all(new_path)?;
+            } else {
+                // the iterator will always iterate over parent directories first so we don't need to
+                // use copy_create
+                copy_create(path, new_path)?;
+            }
+            Ok(())
+        })?;
+    Ok(())
 }
 
 /// A wrapper around `copy` that will also create the parent directories of the file if they do not

@@ -1,3 +1,5 @@
+use std::{thread, time::Duration};
+
 use super::utils::clone_repo;
 use crate::{assert_file_contents_eq, assert_paths_exists, join_all};
 
@@ -108,13 +110,13 @@ fs_test! {
 
 fs_test! {
     #[test]
-    #[ignore]
     /// these will block for some reason, currently parallel doesn't work
     fn copy_dir_all_par(dir) {
-        // let (create_dir, from, to) = join_all!(dir, "from/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p", "from", "to");
-        let (create_dir, from, to) = join_all!(dir, "from/another_dir", "from", "to");
+        let (create_dir, create_file, from, to) = join_all!(dir, "from/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p", "from/b/c/d/hello.txt", "from", "to");
         dir.mkdirp(create_dir);
+        dir.touch_with_contents(create_file);
 
+        println!("copy_dir_all_par");
         crate::copy_dir_all_par(&from, &to).unwrap();
         assert_paths_exists!(from, to);
     }
@@ -129,6 +131,32 @@ fs_test! {
         assert!(from.exists());
         assert!(!to.exists());
         crate::copy_dir_all(&from, &to).unwrap();
+        assert_paths_exists!(from, to);
+    }
+}
+
+fs_test! {
+    #[test]
+    fn copy_dir_all_par_fd(dir) {
+        let (from, to) = join_all!(dir, "fd_from_par", "fd_to");
+        clone_repo("https://github.com/sharkdp/fd.git", &from);
+
+        assert!(from.exists());
+        assert!(!to.exists());
+        crate::copy_dir_all_par(&from, &to).unwrap();
+        assert_paths_exists!(from, to);
+    }
+}
+
+fs_test! {
+    #[test]
+    fn copy_dir_all_par_fd_alloc(dir) {
+        let (from, to) = join_all!(dir, "fd_from_par", "fd_to");
+        clone_repo("https://github.com/sharkdp/fd.git", &from);
+
+        assert!(from.exists());
+        assert!(!to.exists());
+        crate::copy_dir_all_par_alloc(&from, &to).unwrap();
         assert_paths_exists!(from, to);
     }
 }
