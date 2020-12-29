@@ -1,7 +1,7 @@
 mod error;
-mod utils;
 #[cfg(test)]
 mod tests;
+mod utils;
 
 use std::{fs, path::PathBuf};
 use std::{io, path::Path};
@@ -13,11 +13,18 @@ use rayon::prelude::*;
 pub use error::{Error, Result};
 use utils::change_dir;
 
+/// helper macro to call asref on all of the identifiers
+#[macro_export]
+macro_rules! as_ref_all {
+    ( $( $var:ident ),* ) => {
+        $( let $var = $var.as_ref(); )*
+    };
+}
+
 /// Moves a directory from one place to another recursively. Currently is a wrapper around `copy_dir_all` but removes the
 /// `from` directory
 pub fn move_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
-    let from = from.as_ref();
-    let to = to.as_ref();
+    as_ref_all!(from, to);
 
     let copied = copy_dir_all(from, to)?;
     remove_dir_all(from)?;
@@ -28,8 +35,7 @@ pub fn move_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64>
 /// Moves a file from one place to another. Currently is a wrapper around `copy` but removes the
 /// `from` argument
 pub fn move_file(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
-    let from = from.as_ref();
-    let to = to.as_ref();
+    as_ref_all!(from, to);
 
     let amount = copy_create(from, to)?;
     remove_file(from)?;
@@ -59,8 +65,7 @@ fn check_path_copy_dir_all(path: impl AsRef<Path>) -> Result<()> {
 /// Recursively copies all contents of the directory to another directory. Will create the new
 /// directory if it does not exist
 pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
-    let from = from.as_ref();
-    let to = to.as_ref();
+    as_ref_all!(from, to);
 
     check_path_copy_dir_all(from)?;
 
@@ -86,8 +91,7 @@ pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64>
 }
 
 pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
-    let from = from.as_ref();
-    let to = to.as_ref();
+    as_ref_all!(from, to);
 
     check_path_copy_dir_all(from)?;
 
@@ -117,8 +121,7 @@ pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<
 /// A wrapper around `copy` that will also create the parent directories of the file if they do not
 /// exist
 pub fn copy_create(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
-    let from = from.as_ref();
-    let to = to.as_ref();
+    as_ref_all!(from, to);
 
     if let Some(parent) = to.parent() {
         if !parent.exists() {
@@ -132,8 +135,7 @@ pub fn copy_create(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> 
 /// A wrapper for the standard library's `copy`. Will fail with a custom error that
 /// includes the source error, path, and operation
 pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
-    let from = from.as_ref();
-    let to = to.as_ref();
+    as_ref_all!(from, to);
 
     fs::copy(from, to).map_err(|e| Error::IoExtMulti {
         source: e,
@@ -146,7 +148,7 @@ pub fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
 /// A wrapper for the standard library's `remove_file`. Will fail with a custom error that
 /// includes the source error, path, and operation
 pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
-    let path = path.as_ref();
+    as_ref_all!(path);
 
     fs::remove_file(path).map_err(|e| Error::IoExt {
         source: e,
@@ -158,7 +160,7 @@ pub fn remove_file(path: impl AsRef<Path>) -> Result<()> {
 /// A wrapper for the standard library's `remove_dir_all`. Will fail with a custom error that
 /// includes the source error, path, and operation
 pub fn remove_dir_all(path: impl AsRef<Path>) -> Result<()> {
-    let path = path.as_ref();
+    as_ref_all!(path);
 
     fs::remove_dir_all(path).map_err(|e| Error::IoExt {
         source: e,
@@ -170,7 +172,7 @@ pub fn remove_dir_all(path: impl AsRef<Path>) -> Result<()> {
 /// A wrapper for the standard library's `create_dir_all`. Will fail with a custom error that
 /// includes the source error, path, and operation
 pub fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
-    let path = path.as_ref();
+    as_ref_all!(path);
 
     fs::create_dir_all(path).map_err(|e| Error::IoExt {
         source: e,

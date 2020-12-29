@@ -1,13 +1,81 @@
 use std::{
+    borrow::Cow,
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
 };
 
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 use tempfile::TempDir;
 
-use crate::err;
+use crate::{as_ref_all, err};
+
+#[macro_export]
+macro_rules! join_all {
+    ( $self:ident, $($path:ident),+ ) => {
+        $(
+            let $path = $self.join_check($path);
+        )+
+    };
+    ( $self:ident, $($path:expr),+ ) => {
+        (
+            $(
+                $self.join_check($path)
+            ),+
+        )
+    }
+}
+
+#[macro_export]
+macro_rules! assert_file_contents_eq {
+    ( $($path:expr),* ) => {
+        assert_eq!(
+            $({
+                use std::fs::File;
+                use std::io::Read;
+
+                let path = &$path;
+                let mut file = File::open(&path).unwrap_or_else(|_| panic!("Failed to open path {}", path.display()));
+                let mut buf = Vec::new();
+                file.read_to_end(&mut buf).unwrap_or_else(|_| panic!("Failed to read file with path {} to end", path.display()));
+                buf
+            }),*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! assert_paths_exists {
+    ( $($path:expr),* ) => {
+        assert!(
+            true $( && {
+                let path = &$path;
+                path.exists()
+            })*
+        )
+    };
+}
+
+macro_rules! assert_macro_testing {
+    ($($boolean:expr),+) => {
+        assert!(
+            true $( && {
+                $boolean
+            })+
+        )
+    };
+}
+
+#[test]
+fn assert_macro_test() {
+    assert_macro_testing!(true, true);
+}
+
+#[test]
+#[should_panic]
+fn asset_macro_test_one_false() {
+    assert_macro_testing!(true, true, false, true);
+}
 
 const RAND_BYTES: usize = 512;
 
@@ -20,7 +88,9 @@ impl TestDir {
     }
 
     pub fn close(self) {
-        self.0.close().unwrap_or_else(|_| panic!("Failed to close test dir"))
+        self.0
+            .close()
+            .unwrap_or_else(|_| panic!("Failed to close test dir"))
     }
 
     pub fn path(&self) -> &Path {
@@ -32,21 +102,38 @@ impl TestDir {
         self.path().join(path)
     }
 
+    /// Return a path joined to the path to this directory. Panics if it is already there
+    pub fn join_check<'a, P: AsRef<Path> + 'a>(&self, path: P) -> PathBuf {
+        let path = path.as_ref();
+
+        if !path.starts_with(self.path()) {
+            self.path().join(path)
+        } else {
+            panic!(
+                "The path {} cannot be join to the tempdir with path {}",
+                path.display(),
+                self.path().display()
+            );
+        }
+    }
+
     /// Create a directory at the given path, while creating all intermediate
     /// directories as needed.
     pub fn mkdirp<P: AsRef<Path>>(&self, path: P) {
-        let full = self.join(path);
-        fs::create_dir_all(&full)
-            .map_err(|e| err!("failed to create directory {}: {}", full.display(), e))
+        as_ref_all!(path);
+
+        fs::create_dir_all(&path)
+            .map_err(|e| err!("failed to create directory {}: {}", path.display(), e))
             .unwrap();
     }
 
     /// Create an empty file at the given path. All ancestor directories must
     /// already exists.
     pub fn touch<P: AsRef<Path>>(&self, path: P) {
-        let full = self.join(path);
-        File::create(&full)
-            .map_err(|e| err!("failed to create file {}: {}", full.display(), e))
+        as_ref_all!(path);
+
+        File::create(&path)
+            .map_err(|e| err!("failed to create file {}: {}", path.display(), e))
             .unwrap();
     }
 
@@ -59,14 +146,14 @@ impl TestDir {
     }
 
     pub fn touch_with_contents<P: AsRef<Path>>(&self, path: P) {
-        let full = self.join(path);
+        as_ref_all!(path);
 
         let mut open_opt = OpenOptions::new();
         open_opt.create_new(true).write(true);
 
         let mut file = open_opt
-            .open(&full)
-            .map_err(|e| err!("failed to create file {}: {}", full.display(), e))
+            .open(&path)
+            .map_err(|e| err!("failed to create file {}: {}", path.display(), e))
             .unwrap();
 
         file.write_all(&random_bytes())
@@ -81,72 +168,6 @@ impl TestDir {
         for p in paths {
             self.touch_with_contents(p);
         }
-    }
-
-    pub fn copy_properly(&self, from: impl AsRef<Path>, to: impl AsRef<Path>) {
-        let from = self.join(from);
-        let to = self.join(to);
-
-        crate::copy(&from, &to).unwrap();
-
-        let mut file1 = File::open(&from).unwrap();
-        let mut file2 = File::open(&to).unwrap();
-
-        let mut buf1 = Vec::new();
-        let mut buf2 = Vec::new();
-        file1.read_to_end(&mut buf1).unwrap();
-        file2.read_to_end(&mut buf2).unwrap();
-
-        assert_eq!(buf1, buf2);
-        assert!(from.exists());
-        assert!(to.exists());
-    }
-
-    pub fn move_properly(&self, from: impl AsRef<Path>, to: impl AsRef<Path>) {
-        let from = self.join(from);
-        let to = self.join(to);
-
-        crate::move_file(&from, &to).unwrap();
-        assert!(!from.exists());
-        assert!(to.exists());
-    }
-
-    pub fn remove_properly(&self, path: impl AsRef<Path>) {
-        let path = self.join(path);
-        crate::remove_file(&path).unwrap();
-        assert!(!path.exists());
-    }
-
-    pub fn remove_dir_all_properly(&self, path: impl AsRef<Path>) {
-        let path = self.join(path);
-        crate::remove_dir_all(&path).unwrap();
-        assert!(!path.exists());
-    }
-
-    pub fn create_dir_all_properly(&self, path: impl AsRef<Path>) {
-        let path = self.join(path);
-        crate::create_dir_all(&path).unwrap();
-        assert!(path.exists());
-    }
-
-    pub fn copy_create_properly(&self, from: impl AsRef<Path>, to: impl AsRef<Path>) {
-        let from = self.join(from);
-        let to = self.join(to);
-
-        crate::copy_create(&from, &to).unwrap();
-
-        let mut file1 = File::open(&from).unwrap();
-        let mut file2 = File::open(&to).unwrap();
-
-        let mut buf1 = Vec::new();
-        let mut buf2 = Vec::new();
-        file1.read_to_end(&mut buf1).unwrap();
-        file2.read_to_end(&mut buf2).unwrap();
-
-        assert_eq!(buf1, buf2);
-        assert!(to.parent().map(Path::exists).unwrap_or(true));
-        assert!(from.exists());
-        assert!(to.exists());
     }
 }
 

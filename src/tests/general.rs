@@ -1,3 +1,5 @@
+use crate::{assert_file_contents_eq, assert_paths_exists, join_all};
+
 macro_rules! fs_test {
     (
         #[test]
@@ -30,8 +32,14 @@ macro_rules! fs_test {
 fs_test! {
     #[test]
     fn copy(dir) {
-        dir.touch_with_contents("from");
-        dir.copy_properly("from", "to");
+        let (from, to) = join_all!(dir, "from", "to");
+
+        dir.touch_with_contents(&from);
+
+        crate::copy(&from, &to).unwrap();
+
+        assert_file_contents_eq!(&from, &to);
+        assert_paths_exists!(from, to);
     }
 }
 
@@ -39,33 +47,37 @@ fs_test! {
     #[test]
     #[should_panic]
     fn copy_test_not_in_same_dir(dir) {
-        dir.touch_with_contents("from");
-        dir.copy_properly("from", "a_dir/another_dir/to");
+        let (from, to) = join_all!(dir, "from", "a_dir/another_dir/to");
+        dir.touch_with_contents(&from);
+
+        crate::copy(&from, &to).unwrap();
+
+        assert_file_contents_eq!(from, to);
+        assert_paths_exists!(from, to);
     }
 }
 
 fs_test! {
     #[test]
     fn copy_create(dir) {
-        dir.touch_with_contents("from");
-        dir.copy_create_properly("from", "a_dir/another_dir/to");
+        let (from, to) = join_all!(dir, "from", "a_dir/another_dir/to");
+        dir.touch_with_contents(&from);
+
+        crate::copy_create(&from, &to).unwrap();
+
+        assert_file_contents_eq!(from, to);
+        assert_paths_exists!(from, to);
     }
 }
 
 fs_test! {
     #[test]
     fn move_file(dir) {
-        dir.touch_with_contents("from");
-        dir.move_properly("from", "to");
+        let (from, to) = join_all!(dir, "from", "to");
+        dir.touch_with_contents(&from);
+
+        crate::move_file(&from, &to).unwrap();
+        assert_paths_exists!(to);
+        assert!(!from.exists())
     }
 }
-
-// #[ignore]
-// #[test]
-// #[named]
-// fn copy_dir_all_test() -> Result<()> {
-//     let dir = clone_repo("https://github.com/sharkdp/fd.git", "fd_test");
-//     crate::copy_dir_all(&dir, dir.parent().unwrap().join("copied_fd")).unwrap();
-
-//     Ok(())
-// }
