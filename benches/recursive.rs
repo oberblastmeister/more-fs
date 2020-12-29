@@ -1,4 +1,4 @@
-use std::{path::Path, process::Command};
+use std::{path::Path, process::Command, time::Duration};
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 
@@ -22,7 +22,7 @@ fs_fn! {
         let (from, to) = join_all!(dir, "rust_from", "rust_to");
         clone_repo("https://github.com/rust-lang/rust.git", &from);
 
-        let mut group = c.benchmark_group("recursive copy");
+        let mut group = c.benchmark_group("recursive copy rust compiler");
 
         let setup = || {
             if to.exists() {
@@ -30,12 +30,12 @@ fs_fn! {
             }
         };
 
-        group.bench_function("single threaded copy more_fs", |b| b.iter_batched(
+        group.bench_function("single threaded more_fs", |b| b.iter_batched(
                 setup,
                 |_| more_fs::copy_dir_all(&from, &to).unwrap(), BatchSize::PerIteration
         ));
 
-        group.bench_function("multi threaded copy more_fs", |b| b.iter_batched(
+        group.bench_function("multi threaded more_fs", |b| b.iter_batched(
                 setup,
                 |_| more_fs::copy_dir_all_par(&from, &to).unwrap(), BatchSize::PerIteration
         ));
@@ -46,7 +46,7 @@ fs_fn! {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(50);
+    config = Criterion::default().sample_size(50).warm_up_time(Duration::from_secs(30));
     targets = criterion_benchmark
 }
 
