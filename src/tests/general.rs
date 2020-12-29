@@ -147,16 +147,3 @@ fs_test! {
         assert_paths_exists!(from, to);
     }
 }
-
-fs_test! {
-    #[test]
-    fn copy_dir_all_par_fd_alloc(dir) {
-        let (from, to) = join_all!(dir, "fd_from_par", "fd_to");
-        clone_repo("https://github.com/sharkdp/fd.git", &from);
-
-        assert!(from.exists());
-        assert!(!to.exists());
-        crate::copy_dir_all_par_alloc(&from, &to).unwrap();
-        assert_paths_exists!(from, to);
-    }
-}

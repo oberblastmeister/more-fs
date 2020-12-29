@@ -90,36 +90,36 @@ pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64>
     Ok(copied)
 }
 
-/// par bridge is a little bit wierd, don't use this yet
-pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
-    as_ref_all!(from, to);
+// /// par bridge is a little bit wierd, don't use this yet, will deadlock
+// pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
+//     as_ref_all!(from, to);
 
-    check_path_copy_dir_all(from)?;
+//     check_path_copy_dir_all(from)?;
 
-    WalkDir::new(from)
-        .skip_hidden(false)
-        .into_iter()
-        .par_bridge()
-        .try_for_each(|entry| -> Result<()> {
-            let entry = entry?;
-            let path = entry.path();
-            let new_path = change_dir(from, to, &path)?;
+//     WalkDir::new(from)
+//         .skip_hidden(false)
+//         .into_iter()
+//         .par_bridge()
+//         .try_for_each(|entry| -> Result<()> {
+//             let entry = entry?;
+//             let path = entry.path();
+//             let new_path = change_dir(from, to, &path)?;
 
-            let file_type = entry.file_type();
-            if file_type.is_dir() {
-                println!("creating new dir all {}", new_path.display());
-                create_dir_all(new_path)?; // if it already exists, will not fail
-            } else {
-                println!("copying from {} to {}", path.display(), new_path.display());
-                copy_create(path, new_path)?;
-            }
-            Ok(())
-        })?;
+//             let file_type = entry.file_type();
+//             if file_type.is_dir() {
+//                 println!("creating new dir all {}", new_path.display());
+//                 create_dir_all(new_path)?; // if it already exists, will not fail
+//             } else {
+//                 println!("copying from {} to {}", path.display(), new_path.display());
+//                 copy_create(path, new_path)?;
+//             }
+//             Ok(())
+//         })?;
 
-    Ok(0)
-}
+//     Ok(0)
+// }
 
-pub fn copy_dir_all_par_alloc(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<()> {
+pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<()> {
     as_ref_all!(from, to);
 
     check_path_copy_dir_all(from)?;
@@ -128,7 +128,7 @@ pub fn copy_dir_all_par_alloc(from: impl AsRef<Path>, to: impl AsRef<Path>) -> R
         .skip_hidden(false)
         .into_iter()
         .collect::<result::Result<Vec<_>, jwalk::Error>>()
-        .map_err(|e| Error::WalkDir { source: e })?;
+        .map_err(|e| Error::WalkDir { source: e })?; // would like to use par bridge once it doesn't deadlock
 
     entries
         .into_par_iter()
