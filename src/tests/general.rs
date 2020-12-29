@@ -96,7 +96,6 @@ fs_test! {
 
 fs_test! {
     #[test]
-    #[ignore]
     fn copy_dir_all(dir) {
         let (create_dir, create_file, from, to) = join_all!(dir, "a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p", "a/b/c/d/e/a_file.txt", "a", "moved");
         dir.mkdirp(create_dir);
@@ -110,24 +109,26 @@ fs_test! {
 fs_test! {
     #[test]
     #[ignore]
-    /// these will block for some reason
+    /// these will block for some reason, currently parallel doesn't work
     fn copy_dir_all_par(dir) {
         // let (create_dir, from, to) = join_all!(dir, "from/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p", "from", "to");
         let (create_dir, from, to) = join_all!(dir, "from/another_dir", "from", "to");
         dir.mkdirp(create_dir);
 
-        // crate::copy_dir_all_par(&from, &to).unwrap();
-        // assert_paths_exists!(from, to);
+        crate::copy_dir_all_par(&from, &to).unwrap();
+        assert_paths_exists!(from, to);
     }
 }
 
 fs_test! {
     #[test]
-    fn copy_dir_all_par_fd(dir) {
+    fn copy_dir_all_fd(dir) {
         let (from, to) = join_all!(dir, "fd_from", "fd_to");
         clone_repo("https://github.com/sharkdp/fd.git", &from);
 
-        crate::copy_dir_all_par(&from, &to).unwrap();
+        assert!(from.exists());
+        assert!(!to.exists());
+        crate::copy_dir_all(&from, &to).unwrap();
         assert_paths_exists!(from, to);
     }
 }

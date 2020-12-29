@@ -79,7 +79,7 @@ pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64>
 
         let file_type = entry.file_type();
         if file_type.is_dir() {
-            create_dir_all(new_path)?;
+            create_dir(new_path)?;
         } else {
             // the iterator will always iterate over parent directories first so we don't need to
             // use copy_create
@@ -106,7 +106,9 @@ pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<
 
             let file_type = entry.file_type();
             if file_type.is_dir() {
-                create_dir_all(new_path)?;
+                if !new_path.exists() {
+                    create_dir_all(new_path)?;
+                }
             } else {
                 copy_create(path, new_path)?;
             }
@@ -176,5 +178,15 @@ pub fn create_dir_all(path: impl AsRef<Path>) -> Result<()> {
         source: e,
         path: path.to_path_buf(),
         operation: Operation::CreatePathAll,
+    })
+}
+
+pub fn create_dir(path: impl AsRef<Path>) -> Result<()> {
+    as_ref_all!(path);
+
+    fs::create_dir(path).map_err(|e| Error::IoExt {
+        source: e,
+        path: path.to_path_buf(),
+        operation: Operation::Create,
     })
 }
