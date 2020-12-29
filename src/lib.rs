@@ -106,9 +106,7 @@ pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<
 
             let file_type = entry.file_type();
             if file_type.is_dir() {
-                if !path.exists() {
-                    create_dir_all(new_path)?;
-                }
+                create_dir_all(new_path)?;
             } else {
                 copy_create(path, new_path)?;
             }

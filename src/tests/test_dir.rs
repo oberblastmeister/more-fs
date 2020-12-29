@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File, OpenOptions},
-    io::{Write},
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -82,7 +82,10 @@ pub struct TestDir(TempDir);
 
 impl TestDir {
     pub fn new() -> TestDir {
-        let tempdir = TempDir::new().expect("Failed to create tempdir for the test dir");
+        let tempdir = tempfile::Builder::new()
+            .prefix(env!("CARGO_PKG_NAME"))
+            .tempdir()
+            .expect("Failed to create tempdir for the test dir");
         TestDir(tempdir)
     }
 
@@ -119,7 +122,7 @@ impl TestDir {
     /// Create a directory at the given path, while creating all intermediate
     /// directories as needed.
     pub fn mkdirp<P: AsRef<Path>>(&self, path: P) {
-        as_ref_all!(path);
+        let path = path.as_ref();
 
         fs::create_dir_all(&path)
             .map_err(|e| err!("failed to create directory {}: {}", path.display(), e))
