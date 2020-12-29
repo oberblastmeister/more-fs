@@ -1,13 +1,11 @@
 #[macro_export]
-macro_rules! fs_test {
+macro_rules! fs_fn {
     (
-        #[test]
         $( #[$meta:meta] )*
-        fn $test_name:ident($test_dir:ident) -> $return:ty $body:block
+        fn $test_name:ident $params:tt ($test_dir:ident) -> $return:ty $body:block
     ) => {
-        #[test]
         $( #[$meta] )*
-        fn $test_name() -> $return {
+        fn $test_name $params -> $return {
             let $test_dir = test_dir::TestDir::new();
             let res = $block
             $test_dir.close()
@@ -15,13 +13,11 @@ macro_rules! fs_test {
         }
     };
     (
-        #[test]
         $( #[$meta:meta] )*
-        fn $test_name:ident($test_dir:ident) $body:block
+        fn $test_name:ident $params:tt ($test_dir:ident) $body:block
     ) => {
-        #[test]
         $( #[$meta] )*
-        fn $test_name() {
+        fn $test_name $params {
             let $test_dir = test_dir::TestDir::new();
             $body
             $test_dir.close()

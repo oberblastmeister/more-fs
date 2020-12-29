@@ -23,9 +23,8 @@ members = [
     "test_dir",
 ]
 
-# [lib]
-# name = "more_fs"
-# path = "src/lib.rs"
+[lib]
+name = "more_fs"
 
 [[bench]]
 name = "recursive"
