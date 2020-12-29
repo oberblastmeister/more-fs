@@ -14,7 +14,6 @@ pub use error::{Error, Result};
 use utils::change_dir;
 
 /// helper macro to call asref on all of the identifiers
-#[macro_export]
 macro_rules! as_ref_all {
     ( $( $var:ident ),* ) => {
         $( let $var = $var.as_ref(); )*

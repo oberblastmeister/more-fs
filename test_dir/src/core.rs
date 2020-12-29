@@ -7,78 +7,9 @@ use std::{
 use rand::{thread_rng, Rng};
 use tempfile::TempDir;
 
-use crate::{as_ref_all, err};
-
-#[macro_export]
-macro_rules! join_all {
-    ( $self:ident, $($path:ident),+ ) => {
-        $(
-            let $path = $self.join_check($path);
-        )+
-    };
-    ( $self:ident, $($path:expr),+ ) => {
-        (
-            $(
-                $self.join_check($path)
-            ),+
-        )
-    }
-}
-
-#[macro_export]
-macro_rules! assert_file_contents_eq {
-    ( $($path:expr),* ) => {
-        assert_eq!(
-            $({
-                use std::fs::File;
-                use std::io::Read;
-
-                let path = &$path;
-                let mut file = File::open(&path).unwrap_or_else(|_| panic!("Failed to open path {}", path.display()));
-                let mut buf = Vec::new();
-                file.read_to_end(&mut buf).unwrap_or_else(|_| panic!("Failed to read file with path {} to end", path.display()));
-                buf
-            }),*
-        )
-    };
-}
-
-#[macro_export]
-macro_rules! assert_paths_exists {
-    ( $($path:expr),* ) => {
-        assert!(
-            true $( && {
-                let path = &$path;
-                path.exists()
-            })*
-        )
-    };
-}
-
-macro_rules! assert_macro_testing {
-    ($($boolean:expr),+) => {
-        assert!(
-            true $( && {
-                $boolean
-            })+
-        )
-    };
-}
-
-#[test]
-fn assert_macro_test() {
-    assert_macro_testing!(true, true);
-}
-
-#[test]
-#[should_panic]
-fn asset_macro_test_one_false() {
-    assert_macro_testing!(true, true, false, true);
-}
+pub struct TestDir(TempDir);
 
 const RAND_BYTES: usize = 512;
-
-pub struct TestDir(TempDir);
 
 impl TestDir {
     pub fn new() -> TestDir {
@@ -173,7 +104,8 @@ impl TestDir {
     }
 }
 
-pub fn random_bytes() -> [u8; RAND_BYTES] {
+/// returns an array of random bytes
+fn random_bytes() -> [u8; RAND_BYTES] {
     let mut rng = thread_rng();
     let mut buf = [0u8; RAND_BYTES];
     rng.fill(&mut buf);
