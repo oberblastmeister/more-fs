@@ -1,9 +1,8 @@
 [package]
 name = "more-fs"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Brian Shu <littlebubu.shu@gmail.com>"]
 description = "More filesystem operations"
-documentation = "https://docs.rs/more-fs/"
 homepage = "https://github.com/oberblastmeister/more-fs"
 repository = "https://github.com/oberblastmeister/more-fs"
 readme = "README.md"
