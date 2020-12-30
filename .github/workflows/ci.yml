@@ -13,16 +13,21 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
+        rust: [stable, beta, nightly]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
-          toolchain: stable
+          toolchain: ${{ matrix.rust }}
           override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
+          profile: minimal
+      - run: cargo build --verbose --workspace
+      - run: cargo test --verbose --workspace
+      # - uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
 
   fmt:
     name: Rustfmt
