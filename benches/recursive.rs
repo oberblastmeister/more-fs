@@ -42,6 +42,7 @@ fn bench_on_repo<M: criterion::measurement::Measurement>(
         )
     });
 
+    #[cfg(feature = "rayon")]
     group.bench_function(format!("multi threaded more_fs {}", url), |b| {
         b.iter_batched(
             setup,

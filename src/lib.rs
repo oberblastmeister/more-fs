@@ -7,6 +7,7 @@ use std::{fs, path::PathBuf, result};
 use std::{io, path::Path};
 
 use error::Operation;
+#[cfg(feature = "rayon")]
 use rayon::prelude::*;
 use walkdir::WalkDir;
 
@@ -98,6 +99,7 @@ pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64>
     Ok(copied)
 }
 
+#[cfg(feature = "rayon")]
 fn copy_or_create_par(
     file_type: fs::FileType,
     from: impl AsRef<Path>,
@@ -113,6 +115,7 @@ fn copy_or_create_par(
     Ok(())
 }
 
+#[cfg(feature = "rayon")]
 pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<()> {
     as_ref_all!(from, to);
 

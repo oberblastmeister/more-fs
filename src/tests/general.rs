@@ -77,6 +77,7 @@ fs_fn! {
     }
 }
 
+#[cfg(feature = "rayon")]
 fs_fn! {
     #[test]
     /// these will block for some reason, currently parallel doesn't work
@@ -104,6 +105,7 @@ fs_fn! {
     }
 }
 
+#[cfg(feature = "rayon")]
 fs_fn! {
     #[test]
     fn copy_dir_all_par_fd()(dir) {
