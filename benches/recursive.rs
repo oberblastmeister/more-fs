@@ -1,6 +1,6 @@
-use std::{path::Path, process::Command};
+use std::{path::Path, process::Command, time::Duration};
 
-use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkGroup, Criterion};
 
 use test_dir::{fs_fn, join_all, TestDir};
 
@@ -17,19 +17,16 @@ pub fn clone_repo<P: AsRef<Path>>(url: &str, path: P) {
     println!("Exit status {}", status);
 }
 
-fn bench_on_repo(
-    c: &mut Criterion,
+fn bench_on_repo<M: criterion::measurement::Measurement>(
     dir: &TestDir,
     url: &str,
     from: &str,
     to: &str,
-    group_name: &str,
+    group: &mut BenchmarkGroup<'_, M>,
 ) {
     join_all!(dir, from, to);
 
     clone_repo(url, &from);
-
-    let mut group = c.benchmark_group(group_name);
 
     let setup = || {
         if to.exists() {
@@ -63,32 +60,43 @@ fn bench_on_repo(
             BatchSize::PerIteration,
         )
     });
-
-    group.finish();
 }
 
 fs_fn! {
-    fn rust_src_bench(c: &mut Criterion)(dir) {
-        bench_on_repo(c, &dir, "https://github.com/rust-lang/rust.git", "rust_src_from", "rust_src_to", "recursive copy rust source code");
-    }
-}
+    fn copy_benchmark(c: &mut Criterion)(dir) {
+        let mut group = c.benchmark_group("recursive copy functions");
 
-fs_fn! {
-    fn fd_src_bench(c: &mut Criterion)(dir) {
-        bench_on_repo(c, &dir, "https://github.com/sharkdp/fd.git", "fd_from", "fd_to", "recursive copy fd source code (smaller repo)");
-    }
-}
+        bench_on_repo(&dir,
+            "https://github.com/rust-lang/rust.git",
+            "rust_from",
+            "rust_to",
+            &mut group
+        );
 
-fs_fn! {
-    fn this_crate_src_bench(c: &mut Criterion)(dir) {
-        bench_on_repo(c, &dir, "https://github.com/oberblastmeister/more-fs.git", "more_fs_from", "more_fs_to", "recursive copy more_fs source code (smallest repo)");
+        bench_on_repo(&dir,
+            "",
+            "fd_from",
+            "fd_to",
+            &mut group
+        );
+
+        bench_on_repo(&dir,
+            "https://github.com/oberblastmeister/more-fs.git",
+            "more_fs_from",
+            "more_fs_to",
+            &mut group
+        );
+
+        group.finish();
     }
 }
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(30);
-    targets = rust_src_bench, fd_src_bench, this_crate_src_bench
+    config = Criterion::default()
+        .sample_size(30)
+        .measurement_time(Duration::from_secs(10));
+    targets = copy_benchmark
 }
 
 criterion_main!(benches);
