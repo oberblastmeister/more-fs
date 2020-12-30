@@ -36,7 +36,7 @@ pub enum Error {
     },
 
     WalkDir {
-        source: jwalk::Error,
+        source: walkdir::Error,
     },
 }
 
@@ -190,8 +190,8 @@ impl error::Error for Error {
     }
 }
 
-impl From<jwalk::Error> for Error {
-    fn from(walk_dir_err: jwalk::Error) -> Self {
+impl From<walkdir::Error> for Error {
+    fn from(walk_dir_err: walkdir::Error) -> Self {
         Error::WalkDir {
             source: walk_dir_err,
         }
