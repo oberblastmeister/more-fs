@@ -4,8 +4,10 @@ The crate tries to mirror the standard library api to make it easy to use.
 
 To use this crate, add the more-fs dependency to you  project's `Cargo.toml`:
 
-    [dependencies]
-    more_fs = "2"
+```ignore
+[dependencies]
+more_fs = "2"
+```
 
 # New functions
 
@@ -26,7 +28,7 @@ trigger the error. Checkout the [`Error`] type to learn more about the errors.
 
 This code will recursively move a directory to a new directory, similar to `mv` behavior.
 
-```rust
+```no_run
 use more_fs::move_dir_all;
 
 move_dir_all("starting_directory", "moved_directory").unwrap();
@@ -34,7 +36,7 @@ move_dir_all("starting_directory", "moved_directory").unwrap();
 
 If you want to move files, you can do this
 
-```rust
+```no_run
 use more_fs::move_file;
 
 move_file("starting file", "moved_file").unwrap();
@@ -42,7 +44,7 @@ move_file("starting file", "moved_file").unwrap();
 
 Copying files or directories works the same way:
 
-```rust
+```no_run
 use more_fs::copy;
 
 copy("starting file", "copied_file").unwrap();
@@ -54,12 +56,12 @@ Copying or moving a whole directory can fail in between the process.
 Lets say that you have a directory called `from_directory` that has two files in it, `file1` and `file2`.
 You are trying recursively copy it to `to_directory`.
 
-```rust
+```no_run
 use more_fs::copy_dir_all_par;
 
 // from_directory contains from_directory/file1
 // and from_directory/file2
-copy_dir_all_par("from_directory", "to_directory")
+copy_dir_all_par("from_directory", "to_directory").unwrap()
 ```
 
 more_fs will first create `to_directory` and copy `from_directory/file1` to `to_directory/file1`.
@@ -67,14 +69,13 @@ Now it will try to copy `from_directory/file2` to `to_directory/file2`.
 If it fails, `to_directory/file1` will still exist.
 If we want to recovery from this operation, we can do this
 
-
-```rust
-use more_fs::copy_dir_all_par;
+```no_run
+use more_fs::{remove_dir_all, copy_dir_all_par};
 
 // if copying from_directory fails, we can remove the left over artifact by using recover
 copy_dir_all_par("from_directory", "to_directory").map_err(|e| {
     e.recover(|| remove_dir_all("to_directory"))
-})?;
+}).unwrap();
 ```
 
 [`Error::recover`] takes a closure or a function that it will run to recover from the error given.
