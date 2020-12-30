@@ -36,7 +36,7 @@ impl TestDir {
     }
 
     /// Return a path joined to the path to this directory. Panics if it is already there
-    pub fn join_check<'a, P: AsRef<Path> + 'a>(&self, path: P) -> PathBuf {
+    pub fn join_check<P: AsRef<Path>>(&self, path: P) -> PathBuf {
         let path = path.as_ref();
 
         if !path.starts_with(self.path()) {

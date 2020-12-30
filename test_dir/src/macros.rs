@@ -42,7 +42,7 @@ macro_rules! as_ref_all {
 macro_rules! join_all {
     ( $self:ident, $($path:ident),+ ) => {
         $(
-            let $path = $self.join_check($path);
+            let $path = $self.join_check(Path::new($path));
         )+
     };
     ( $self:ident, $($path:expr),+ ) => {
