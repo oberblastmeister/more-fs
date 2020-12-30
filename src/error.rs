@@ -161,7 +161,7 @@ impl Error {
         }
     }
 
-    fn recover(self, recover_fn: impl Fn() -> Result<()>) -> Error {
+    pub fn recover(self, recover_fn: impl FnOnce() -> Result<()>) -> Error {
         let res = recover_fn();
         match res {
             Ok(()) => self,

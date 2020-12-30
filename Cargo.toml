@@ -29,6 +29,10 @@ criterion = "0.3.3"
 fs_extra = "1.2.0"
 test_dir = { path = "test_dir" }
 
+[lib]
+name = "more_fs"
+path = "src/lib.rs"
+
 [[bench]]
 name = "recursive"
 harness = false
