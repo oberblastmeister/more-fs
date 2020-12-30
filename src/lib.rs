@@ -61,6 +61,22 @@ fn check_path_copy_dir_all(path: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
+fn copy_or_create(
+    file_type: fs::FileType,
+    from: impl AsRef<Path>,
+    to: impl AsRef<Path>,
+) -> Result<u64> {
+    let amount = if file_type.is_dir() {
+        create_dir(to)?;
+        0
+    } else {
+        // the iterator will always iterate over parent directories first so we don't need to
+        // use copy_create
+        copy(from, to)?
+    };
+    Ok(amount)
+}
+
 /// Recursively copies all contents of the directory to another directory. Will create the new
 /// directory if it does not exist
 pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
@@ -76,47 +92,26 @@ pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64>
         let path = entry.path();
         let new_path = change_dir(from, to, &path)?;
 
-        let file_type = entry.file_type();
-        if file_type.is_dir() {
-            create_dir(new_path)?;
-        } else {
-            // the iterator will always iterate over parent directories first so we don't need to
-            // use copy_create
-            copied += copy(path, new_path)?;
-        }
+        copied += copy_or_create(entry.file_type(), path, new_path)?;
     }
 
     Ok(copied)
 }
 
-// /// par bridge is a little bit wierd, don't use this yet, will deadlock
-// pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64> {
-//     as_ref_all!(from, to);
-
-//     check_path_copy_dir_all(from)?;
-
-//     WalkDir::new(from)
-//         .skip_hidden(false)
-//         .into_iter()
-//         .par_bridge()
-//         .try_for_each(|entry| -> Result<()> {
-//             let entry = entry?;
-//             let path = entry.path();
-//             let new_path = change_dir(from, to, &path)?;
-
-//             let file_type = entry.file_type();
-//             if file_type.is_dir() {
-//                 println!("creating new dir all {}", new_path.display());
-//                 create_dir_all(new_path)?; // if it already exists, will not fail
-//             } else {
-//                 println!("copying from {} to {}", path.display(), new_path.display());
-//                 copy_create(path, new_path)?;
-//             }
-//             Ok(())
-//         })?;
-
-//     Ok(0)
-// }
+fn copy_or_create_par(
+    file_type: fs::FileType,
+    from: impl AsRef<Path>,
+    to: impl AsRef<Path>,
+) -> Result<()> {
+    if file_type.is_dir() {
+        create_dir_all(to)?;
+    } else {
+        // the iterator will always iterate over parent directories first so we don't need to
+        // use copy_create
+        copy_create(from, to)?;
+    }
+    Ok(())
+}
 
 pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<()> {
     as_ref_all!(from, to);
@@ -136,13 +131,8 @@ pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<
             let new_path = change_dir(from, to, &path)?;
             let file_type = entry.file_type();
 
-            if file_type.is_dir() {
-                create_dir_all(new_path)?;
-            } else {
-                // the iterator will always iterate over parent directories first so we don't need to
-                // use copy_create
-                copy_create(path, new_path)?;
-            }
+            copy_or_create_par(file_type, path, new_path)?;
+
             Ok(())
         })?;
     Ok(())
