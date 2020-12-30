@@ -34,7 +34,7 @@ fn bench_on_repo<M: criterion::measurement::Measurement>(
         }
     };
 
-    group.bench_function("single threaded more_fs", |b| {
+    group.bench_function(format!("single threaded more_fs {}", url), |b| {
         b.iter_batched(
             setup,
             |_| more_fs::copy_dir_all(&from, &to).unwrap(),
@@ -42,7 +42,7 @@ fn bench_on_repo<M: criterion::measurement::Measurement>(
         )
     });
 
-    group.bench_function("multi threaded more_fs", |b| {
+    group.bench_function(format!("multi threaded more_fs {}", url), |b| {
         b.iter_batched(
             setup,
             |_| more_fs::copy_dir_all_par(&from, &to).unwrap(),
@@ -53,7 +53,7 @@ fn bench_on_repo<M: criterion::measurement::Measurement>(
     let mut fs_extra_copy_opt = fs_extra::dir::CopyOptions::new();
     fs_extra_copy_opt.copy_inside = true;
 
-    group.bench_function("single threaded fs_extra", |b| {
+    group.bench_function(format!("single threaded fs_extra {}", url), |b| {
         b.iter_batched(
             setup,
             |_| fs_extra::dir::copy(&from, &to, &fs_extra_copy_opt).unwrap(),
@@ -74,7 +74,7 @@ fs_fn! {
         );
 
         bench_on_repo(&dir,
-            "",
+            "https://github.com/sharkdp/fd.git",
             "fd_from",
             "fd_to",
             &mut group

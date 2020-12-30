@@ -7,8 +7,8 @@ use std::{fs, path::PathBuf, result};
 use std::{io, path::Path};
 
 use error::Operation;
-use jwalk::WalkDir;
 use rayon::prelude::*;
+use walkdir::WalkDir;
 
 pub use error::{Error, Result};
 use utils::change_dir;
@@ -84,7 +84,7 @@ pub fn copy_dir_all(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<u64>
 
     check_path_copy_dir_all(from)?;
 
-    let walkdir = WalkDir::new(from).skip_hidden(false);
+    let walkdir = WalkDir::new(from);
 
     let mut copied = 0;
     for entry in walkdir {
@@ -118,15 +118,11 @@ pub fn copy_dir_all_par(from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<
 
     check_path_copy_dir_all(from)?;
 
-    let entries = WalkDir::new(from)
-        .skip_hidden(false)
+    WalkDir::new(from)
         .into_iter()
-        .collect::<result::Result<Vec<_>, jwalk::Error>>()
-        .map_err(|e| Error::WalkDir { source: e })?; // would like to use par bridge once it doesn't deadlock
-
-    entries
-        .into_par_iter()
+        .par_bridge()
         .try_for_each(|entry| -> Result<()> {
+            let entry = entry?;
             let path = entry.path();
             let new_path = change_dir(from, to, &path)?;
             let file_type = entry.file_type();
