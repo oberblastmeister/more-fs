@@ -1,5 +1,5 @@
 [package]
-name = "more_fs"
+name = "more-fs"
 version = "0.1.0"
 authors = ["Brian Shu <littlebubu.shu@gmail.com>"]
 description = "More filesystem operations"
